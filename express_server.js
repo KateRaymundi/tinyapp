@@ -5,7 +5,7 @@ const PORT = 8080; // default port 8080
 app.set('views', './view'); // esse codigo pode me dar problema no futuroviews
 app.set("view engine", "ejs");
 
-const bodyParser = require("body-parser");       //??????
+const bodyParser = require("body-parser");       // converts the body from POST into a string
 app.use(bodyParser.urlencoded({extended: true}));
 
 const urlDatabase = {
@@ -40,12 +40,28 @@ app.get("/urls/:shortURL", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
-app.post("/urls", (req, res) => {
+app.post("/urls", (req, res) => { // long URL referes do the body to the request 
   console.log(req.body);  // Log the POST request body to the console
-  res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  newKey = generateRandomString()
+  urlDatabase[newKey] = req.body.longURL
+  //console.log(urlDatabase)
+  //res.send("Ok");         // Respond with 'Ok' (we will replace this)
+  res.redirect(`/urls/${newKey}`)
 });
 
+app.get("/u/:shortURL", (req, res) => {
+  const longURL = urlDatabase[req.params.shortURL]
+  res.redirect(longURL);
+});
 
+function generateRandomString() {
+  var result           = '';
+  var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+     for ( var i = 0; i < 7; i++ ) {
+     result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
+}
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
