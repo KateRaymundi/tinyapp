@@ -1,6 +1,8 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
+var cookieParser = require('cookie-parser')
+app.use(cookieParser())
 
 app.set('views', './view'); // esse codigo pode me dar problema no futuroviews
 app.set("view engine", "ejs");
@@ -26,22 +28,29 @@ app.get("/hello", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase };
+  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
-  res.render("urls_new");
+  let templateVars = { urls: urlDatabase, username: req.cookies["username"] };
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:shortURL", (req, res) => { //shortURL is id in this case
-  let templateVars = { shortURL: req.params.shortURL, longURL: urlDatabase[req.params.shortURL]};
+  let templateVars = { 
+    username: req.cookies["username"],
+    shortURL: req.params.shortURL, 
+    longURL: urlDatabase[req.params.shortURL]
+  };
+  
   res.render("urls_show", templateVars);
 });
 
+
 app.post("/urls", (req, res) => { // long URL referes do the body to the request 
   console.log(req.body);  // Log the POST request body to the console
-  newKey = generateRandomString()
+  let newKey = generateRandomString()
   urlDatabase[newKey] = req.body.longURL
   //console.log(urlDatabase)
   //res.send("Ok");         // Respond with 'Ok' (we will replace this)
@@ -78,6 +87,30 @@ app.post("/urls/:shortURL", (req, res) => { // cria um novo field para o usuario
 
 })
 
+app.post("/login", (req, res) => {
+  let username = req.body.username;
+  res.cookie('username', username);
+  res.redirect('/urls')
+})
+
+app.post("/logout", (req, res) => {
+  res.clearCookie('username')
+  res.redirect('/urls')
+})
+
+
+
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
+
+
+
+// const menu = {
+//   "fries" : 2.99,
+//   "burger": 3.99
+// }
+
+// app.get('/menu/:item', (req, res) => {
+//   res.send(`${menu[req.params.item]}`)
+// })
