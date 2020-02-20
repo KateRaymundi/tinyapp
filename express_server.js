@@ -10,7 +10,7 @@ app.set("view engine", "ejs");
 const bodyParser = require("body-parser");       // converts the body from POST into a string
 app.use(bodyParser.urlencoded({extended: true}));
 
-const users = { 
+const users = {
     "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
@@ -26,9 +26,19 @@ const users = {
 const matchUsers = (email) => {
   for (let valEmailId in users){
     if (users[valEmailId].email === email){
-      return true
+      return users[valEmailId].id
     }
   }
+}
+
+// Random String used for userID
+function generateRandomString() {
+  var result           = '';
+  var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+     for ( var i = 0; i < 7; i++ ) {
+     result += characters.charAt(Math.floor(Math.random() * characters.length));
+  }
+  return result;
 }
 
 const urlDatabase = {
@@ -77,16 +87,6 @@ app.post("/urls", (req, res) => { // long URL referes do the body to the request
   res.redirect(`/urls/${newKey}`)
 });
 
-// Random String used for userID
-function generateRandomString() {
-  var result           = '';
-  var characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-     for ( var i = 0; i < 7; i++ ) {
-     result += characters.charAt(Math.floor(Math.random() * characters.length));
-  }
-  return result;
-}
-
 // REDIRECT for ShortURL >> LongURL
 app.get("/u/:shortURL", (req, res) => {
   const longURL = urlDatabase[req.params.shortURL]
@@ -109,33 +109,46 @@ app.post("/urls/:shortURL", (req, res) => { // cria um novo field para o usuario
 
 // LOGIN - Action (POST)
 app.post("/login", (req, res) => {
-  let username = req.body.username;
-  res.cookie('username', username); // ess configuracao vai gravar o cookie do usuario no servidor
-  res.redirect('/urls')
+  let email = req.body.email
+  let password = req.body.password
+  let user_id = matchUsers(email)
+  if (user_id) {
+    if (password === users[user_id].password){
+      res.cookie('user_id', user_id)
+    } else {
+      res.statusCode = 403.
+      res.send(res.statusCode)
+    }
+  } else {
+    res.statusCode = 403.
+    res.send(res.statusCode)
+  }
+    res.redirect('/urls')
 })
  
 // LOGIN - Access page (GET)
 app.get('/login', (req, res) => {
-  let templateVars = { user: 'x' }
-  res.render("/urls_login")
+  let templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]]};
+  res.render("urls_login", templateVars)
 })
 
 // LOGOUT
-app.post("/logout", (req, res) => {
-  res.clearCookie('username')
+app.post("/logout", (req, res) => { 
+  res.clearCookie('user_id')
   res.redirect('/urls')
 })
 
 // Open REGISTER page (GET)
 app.get("/register", (req, res) => {
-res.render('urls_user_registration')
+  let templateVars = { user: users[req.cookies["user_id"]]}
+  res.render('urls_user_registration', templateVars)
 })
 
 // REGISTER Action (POST)
 app.post("/register", (req, res) => {
   let { email, password } = req.body // aqui eu solicitei o email e o password do user_registration
   if(email === "" || password === "") {
-    res.statusCode = 404.
+    res.statusCode = 400.
     res.send(res.statusCode)
   } else if (matchUsers(email)) {
     res.statusCode = 404.
@@ -147,8 +160,9 @@ app.post("/register", (req, res) => {
     email: email,             //puxou do file users_registration   
     password: password        //puxou do file users_registration
     }
-    res.cookie("user_id", users[id])
+    res.cookie("user_id", users[id].id)
     res.redirect('/urls')
+    console.log(users)
   }
 })
 
@@ -156,23 +170,3 @@ app.post("/register", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);
 });
-
-/* TO DO 
-Errors >> Linha 138 - Status code deveria ser 400 / Linha 113 - Username agora deve ser user_id
-0 - Testar se user esta sendo adicionado apos Register
-00 - Testar se o cookie gerado eh correto (linha 44)
-1 - adicionar Register link on header
-2 - revisar Register form
-3 - ajustar Login form
-4 - revisar Login JS 
-
-// const menu = {
-//   "fries" : 2.99,
-//   "burger": 3.99
-// }
-
-// app.get('/menu/:item', (req, res) => {
-// res.send(`${menu[req.params.item]}`) // O req params eh so uma configuracao do que o servidor vai trazer, esse parametro eh padrao 
-// ele so vai ser utilizado quando quando receber um id:(que para este caso eh depois do)
-// menu/:item) nesse caso ele vai trazer as informacoes do item 
-//}

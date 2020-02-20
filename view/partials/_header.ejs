@@ -8,15 +8,13 @@
       <div class="navbar-nav">
         <a class="nav-item nav-link" href="/urls">My URLs</a>
         <a class="nav-item nav-link" href="/urls/new">Create New URL</a>
-        
             <% if(user) { %>
-              <p class="navbar-brand"> Logged as <%= user.email %></p>
+              <p class="navbar-brand"> Logged In As <%= user.email %></p>
               <form method="POST" action="/logout"> <!-- vai ser o methodo usado no express-->
               <input type ="submit" value="Logout"> <!-- type eh o tipo de "acao que vc quer fazer" + value eh so o nome do botao-->
             <% } else { %>  
-              <form method="POST" action="/login">
-              <input type="text" placeholder ="username" name="username" required> <!-- placeholder eh o que fica gravado no field-->
-              <input type ="submit" value="Login">
+              <a class="nav-item nav-link" href="/login">Login</a>
+               <a class="nav-item nav-link" href="/register">Register</a>
             <% } %>  
           </div>
         </div>
