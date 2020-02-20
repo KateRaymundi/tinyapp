@@ -10,16 +10,23 @@ app.set("view engine", "ejs");
 const bodyParser = require("body-parser");       // converts the body from POST into a string
 app.use(bodyParser.urlencoded({extended: true}));
 
+const urlDatabase = {
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "4thgth" },
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
+  // "b2xVn2": "http://www.lighthouselabs.ca",
+  // "9sm5xK": "http://www.google.com"
+};
+
 const users = {
     "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
     password: "purple-monkey-dinosaur"
   },
-    "user2RandomID": {
-    id: "user2RandomID", 
-    email: "user2@example.com", 
-    password: "dishwasher-funk"
+    "aJ48lW": {
+    id: "aJ48lW", 
+    email: "test@test", 
+    password: "123"
   }
 }
 
@@ -29,6 +36,16 @@ const matchUsers = (email) => {
       return users[valEmailId].id
     }
   }
+}
+
+const urlsForUser = (id) => {
+  let result = {}
+  for (let url in urlDatabase){
+    if (urlDatabase[url].userID === id) {
+      result[url] = urlDatabase[url]
+    }
+  }
+  return result
 }
 
 // Random String used for userID
@@ -41,11 +58,6 @@ function generateRandomString() {
   return result;
 }
 
-const urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
-};
-
 app.get("/urls.json", (req, res) => { 
   res.json(urlDatabase);
 });
@@ -56,14 +68,19 @@ app.get("/", (req, res) => {
 
 // Displays all URLS
 app.get("/urls", (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]]};
+  let filteredDatabase = urlsForUser(req.cookies["user_id"])
+  let templateVars = {urls: filteredDatabase, user: users[req.cookies["user_id"]]};
   res.render("urls_index", templateVars);
 });
 
 // CREATES new ShortURL
 app.get("/urls/new", (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]]};
-  res.render("urls_new", templateVars);
+  let templateVars = {urls: urlDatabase, user: users[req.cookies["user_id"]]};
+  if (templateVars.user) {
+    res.render("urls_new", templateVars);
+  } else {
+    res.redirect("/login")
+  }
 });
 
 // SHOW specific URL page
@@ -71,15 +88,16 @@ app.get("/urls/:shortURL", (req, res) => { //shortURL is id in this case
   let templateVars = { 
     user: users[req.cookies["user_id"]],
     shortURL: req.params.shortURL, 
-    longURL: urlDatabase[req.params.shortURL]
-  };
-  
+    longURL: urlDatabase[req.params.shortURL].longURL
+    };
+  if (urlDatabase[req.params.shortURL].userID !== req.cookies["user_id"]){
+    templateVars.user = undefined
+  }
   res.render("urls_show", templateVars);
 });
 
 // CREATES new ShortURL
 app.post("/urls", (req, res) => { // long URL referes do the body to the request 
-  console.log(req.body);  // Log the POST request body to the console
   let newKey = generateRandomString()
   urlDatabase[newKey] = req.body.longURL
   //console.log(urlDatabase)
@@ -89,21 +107,23 @@ app.post("/urls", (req, res) => { // long URL referes do the body to the request
 
 // REDIRECT for ShortURL >> LongURL
 app.get("/u/:shortURL", (req, res) => {
-  const longURL = urlDatabase[req.params.shortURL]
+  const longURL = urlDatabase[req.params.shortURL].longURL
   res.redirect(longURL);
 });
 
 // DELETE ShortURL
-app.post("/urls/:shortURL/delete", (req, res) => { // Essa parte aqui foi criada para poder deletar as shorts URL
-  console.log(urlDatabase[req.params.shortURL]) // que ficam no site. Junto com isso eu tambem preciso acrescentar o form no urls_index 
+app.post("/urls/:shortURL/delete", (req, res) => {
+  if (urlDatabase[req.params.shortURL].userID === req.cookies["user_id"]) {
   delete urlDatabase[req.params.shortURL]
+  }
   res.redirect('/urls')
 })
 
 // EDIT ShortURL
 app.post("/urls/:shortURL", (req, res) => { // cria um novo field para o usuario poder editar um novo 
-  console.log(urlDatabase[req.params.shortURL]) // endereco de web. 
-  urlDatabase[req.params.shortURL] = req.body.longURL // a variable usada aqui eh o object shortURL que passa como variavel a longo URL
+  if (urlDatabase[req.params.shortURL].userID === req.cookies["user_id"]) {
+  urlDatabase[req.params.shortURL].longURL = req.body.longURL // a variable usada aqui eh o object shortURL que passa como variavel a longo URL
+  }
   res.redirect('/urls')
 })
 
