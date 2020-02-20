@@ -17,6 +17,7 @@ const urlDatabase = {
   // "b2xVn2": "http://www.lighthouselabs.ca",
   // "9sm5xK": "http://www.google.com"
 };
+console.log(urlDatabase)
 
 const users = {
     "userRandomID": {
@@ -31,7 +32,7 @@ const users = {
   }
 }
 
-const matchUsers = (email) => {
+const matchUsers = (email) => { // this function was created to ckeck if the user is in the data
   for (let valEmailId in users){
     if (users[valEmailId].email === email){
       return users[valEmailId].id
@@ -141,7 +142,7 @@ app.post("/login", (req, res) => {
   let user_id = matchUsers(email)
   if (user_id) {
     if (bcrypt.compareSync(password, users[user_id].password)) {
-      res.cookie('user_id', user_id)
+      res.cookie('user_id', user_id)  // TROCAR POR SESSION
     } else {
       res.statusCode = 403.
       res.send(res.statusCode)
