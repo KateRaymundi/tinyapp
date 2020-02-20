@@ -11,15 +11,14 @@ app.set("view engine", "ejs");
 const bodyParser = require("body-parser");       // converts the body from POST into a string
 app.use(bodyParser.urlencoded({extended: true}));
 
-const urlDatabase = {
-  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "4thgth" },
-  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" }
+const urlDatabase = {   // essa database foi alterada para que somente as pessoas registradas na pagina tenham acesso a shortURL
+  b6UTxQ: { longURL: "https://www.tsn.ca", userID: "4thgth" },  // a shortURL agora virou uma key que recebe um objeto que tem como valor 
+  i3BoGr: { longURL: "https://www.google.ca", userID: "aJ48lW" } // uma long URL e uma chave idd 
   // "b2xVn2": "http://www.lighthouselabs.ca",
   // "9sm5xK": "http://www.google.com"
 };
-console.log(urlDatabase)
 
-const users = {
+const users = {       // isso eh como se fosse a minha database
     "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
@@ -129,61 +128,62 @@ app.post("/urls/:shortURL", (req, res) => { // cria um novo field para o usuario
   res.redirect('/urls')
 })
  
-// LOGIN - Access page (GET)
-app.get('/login', (req, res) => {
+// LOGIN - Access page (GET)        //criado para o usuario poder fazer o registro dele na pagina. Cada vez que o usuario se registra o browse manda as informacoes 
+app.get('/login', (req, res) => {   //para o server atraves do POST  abaixo
   let templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]]};
   res.render("urls_login", templateVars)
 })
 
 // LOGIN - Action (POST)
-app.post("/login", (req, res) => {
-  let email = req.body.email
-  let password = req.body.password
-  let user_id = matchUsers(email)
+app.post("/login", (req, res) => {  // Nesse step aqui nos ja adicionamos um novo usuario no register / eh o mesmo processo de login  
+  let email = req.body.email        
+  let password = req.body.password  
+  console.log("Password", password)
+  let user_id = matchUsers(email)   
   if (user_id) {
-    if (bcrypt.compareSync(password, users[user_id].password)) {
-      res.cookie('user_id', user_id)  // TROCAR POR SESSION
+    if (bcrypt.compareSync(password, users[user_id].password)) { // se o usuario for encontrado a pagina ira dar um match com o password do usuario  
+      res.cookie('user_id', user_id)                             // que ira chamar o cookie e logar o usuario sem ele precisar colocar os dados dele 
     } else {
-      res.statusCode = 403.
-      res.send(res.statusCode)
+      res.statusCode = 403.         // se o usuario nao pode ser encontrado apos o match da data base 
+      res.send(res.statusCode)      // entao ele vai ser direcionado para o status code 403 (Proibido)
     }
-  } else {
+  } else {                          //
     res.statusCode = 403.
     res.send(res.statusCode)
   }
-    res.redirect('/urls')
+    res.redirect('/urls') // depois que o novo usario foi criado, e o cookie foi salvo o usuario eh direcionado para a URL
 })
 
 // LOGOUT
 app.post("/logout", (req, res) => { 
-  res.clearCookie('user_id')
+  res.clearCookie('user_id')    // isso antes era o username e foi passado o cookie novamente 
   res.redirect('/urls')
 })
 
 // Open REGISTER page (GET)
 app.get("/register", (req, res) => {
-  let templateVars = { user: users[req.cookies["user_id"]]}
-  res.render('urls_user_registration', templateVars)
+  let templateVars = { user: users[req.cookies["user_id"]]} // isso era antes o username req.cookies["username"]
+  res.render('urls_user_registration', templateVars) // esse foi o caminho que eu fiz essa configuracao 
 })
 
 // REGISTER Action (POST)
 app.post("/register", (req, res) => {
   let { email, password } = req.body // aqui eu solicitei o email e o password do user_registration
-  if(email === "" || password === "") {
-    res.statusCode = 400.
+  if(email === "" || password === "") { // se o usuario retornar com o username and login vazios ele vai receber o 
+    res.statusCode = 400.               //status code de "BAD REQUEST" 
     res.send(res.statusCode)
-  } else if (matchUsers(email)) {
-    res.statusCode = 404.
-    res.send(res.statusCode)
-  } else { 
-    let id = generateRandomString() 
+  } else if (matchUsers(email)) {         // se o usuario tentar registrar algo um email que ja existe na database. ai a webpage
+    res.statusCode = 404.                 // vai direcionar o cliente para o status code 404 "NOT FOUND"
+    res.send(res.statusCode)             
+  } else {                               //se nenhuma das opcoes acima forem verdadeiras o usuario esta livre para se registrar
+    let id = generateRandomString()      //na pagina. Apos o registro ele eh direcionado para a url principal    
     const hashedPassword = bcrypt.hashSync(password, 10);
     users[id] = {
     id: id,                   
     email: email,              
     password: hashedPassword        
     }
-    res.cookie("user_id", users[id].id)
+    res.cookie("user_id", users[id].id) 
     res.redirect('/urls')
     console.log(users)
   }
