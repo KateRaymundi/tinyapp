@@ -1,8 +1,9 @@
 const express = require("express");
 const app = express();
 const PORT = 8080; // default port 8080
-var cookieParser = require('cookie-parser')
-app.use(cookieParser())
+var cookieParser = require('cookie-parser');
+app.use(cookieParser());
+const bcrypt = require('bcrypt');
 
 app.set('views', './view'); // esse codigo pode me dar problema no futuroviews
 app.set("view engine", "ejs");
@@ -21,12 +22,12 @@ const users = {
     "userRandomID": {
     id: "userRandomID", 
     email: "user@example.com", 
-    password: "purple-monkey-dinosaur"
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
   },
     "aJ48lW": {
     id: "aJ48lW", 
     email: "test@test", 
-    password: "123"
+    password: bcrypt.hashSync("123", 10)
   }
 }
 
@@ -126,6 +127,12 @@ app.post("/urls/:shortURL", (req, res) => { // cria um novo field para o usuario
   }
   res.redirect('/urls')
 })
+ 
+// LOGIN - Access page (GET)
+app.get('/login', (req, res) => {
+  let templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]]};
+  res.render("urls_login", templateVars)
+})
 
 // LOGIN - Action (POST)
 app.post("/login", (req, res) => {
@@ -133,7 +140,7 @@ app.post("/login", (req, res) => {
   let password = req.body.password
   let user_id = matchUsers(email)
   if (user_id) {
-    if (password === users[user_id].password){
+    if (bcrypt.compareSync(password, users[user_id].password)) {
       res.cookie('user_id', user_id)
     } else {
       res.statusCode = 403.
@@ -144,12 +151,6 @@ app.post("/login", (req, res) => {
     res.send(res.statusCode)
   }
     res.redirect('/urls')
-})
- 
-// LOGIN - Access page (GET)
-app.get('/login', (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.cookies["user_id"]]};
-  res.render("urls_login", templateVars)
 })
 
 // LOGOUT
@@ -175,10 +176,11 @@ app.post("/register", (req, res) => {
     res.send(res.statusCode)
   } else { 
     let id = generateRandomString() 
+    const hashedPassword = bcrypt.hashSync(password, 10);
     users[id] = {
-    id: id,                   //puxou da formula acima
-    email: email,             //puxou do file users_registration   
-    password: password        //puxou do file users_registration
+    id: id,                   
+    email: email,              
+    password: hashedPassword        
     }
     res.cookie("user_id", users[id].id)
     res.redirect('/urls')
