@@ -24,15 +24,15 @@ const urlDatabase = {
 
 const users = {
   "userRandomID": {
-  id: "userRandomID",
-  email: "user@example.com",
-  password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
+    id: "userRandomID",
+    email: "user@example.com",
+    password: bcrypt.hashSync("purple-monkey-dinosaur", 10)
   },
 
   "aJ48lW": {
-  id: "aJ48lW",
-  email: "test@test",
-  password: bcrypt.hashSync("123", 10)
+    id: "aJ48lW",
+    email: "test@test",
+    password: bcrypt.hashSync("123", 10)
   }
 };
 
@@ -47,10 +47,10 @@ const urlsForUser = (id) => {
 };
 
 // Random String used for userID
-function generateRandomString() {
-  let result           = '';
+const generateRandomString = () => {
+  let result = '';
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-    for ( var i = 0; i < 7; i++ ) {
+  for (let i = 0; i < 7; i++) {
     result += characters.charAt(Math.floor(Math.random() * characters.length));
   }
   return result;
@@ -66,14 +66,14 @@ app.get("/", (req, res) => {
 
 // Displays all URLS
 app.get("/urls", (req, res) => {
-  let filteredDatabase = urlsForUser(req.session["user_id"]);
-  let templateVars = {urls: filteredDatabase, user: users[req.session["user_id"]]};
+  let filteredDatabase = urlsForUser(req.session["userId"]);
+  let templateVars = {urls: filteredDatabase, user: users[req.session["userId"]]};
   res.render("urls_index", templateVars);
 });
 
 // CREATES new ShortURL
 app.get("/urls/new", (req, res) => {
-  let templateVars = {urls: urlDatabase, user: users[req.session["user_id"]]};
+  let templateVars = {urls: urlDatabase, user: users[req.session["userId"]]};
   if (templateVars.user) {
     res.render("urls_new", templateVars);
   } else {
@@ -84,11 +84,11 @@ app.get("/urls/new", (req, res) => {
 // SHOW specific URL page
 app.get("/urls/:shortURL", (req, res) => {
   let templateVars = {
-    user: users[req.session["user_id"]],
+    user: users[req.session["userId"]],
     shortURL: req.params.shortURL,
     longURL: urlDatabase[req.params.shortURL].longURL
   };
-  if (urlDatabase[req.params.shortURL].userId !== req.session["user_id"]){
+  if (urlDatabase[req.params.shortURL].userId !== req.session["userId"]) {
     templateVars.user = undefined;
   }
   res.render("urls_show", templateVars);
@@ -97,7 +97,7 @@ app.get("/urls/:shortURL", (req, res) => {
 // CREATES new ShortURL
 app.post("/urls", (req, res) => {
   let newKey = generateRandomString();
-  urlDatabase[newKey] = { longURL: req.body.longURL, userId: req.session["user_id"] };
+  urlDatabase[newKey] = { longURL: req.body.longURL, userId: req.session["userId"] };
   res.redirect(`/urls/${newKey}`);
 });
 
@@ -109,75 +109,75 @@ app.get("/u/:shortURL", (req, res) => {
 
 // DELETE ShortURL
 app.post("/urls/:shortURL/delete", (req, res) => {
-  if (urlDatabase[req.params.shortURL].userId === req.session["user_id"]) {
-  delete urlDatabase[req.params.shortURL];
-  };
+  if (urlDatabase[req.params.shortURL].userId === req.session["userId"]) {
+    delete urlDatabase[req.params.shortURL];
+  }
   res.redirect('/urls');
-})
+});
 
 // EDIT ShortURL
 app.post("/urls/:shortURL", (req, res) => {
-  if (urlDatabase[req.params.shortURL].userId === req.session["user_id"]) {
-  urlDatabase[req.params.shortURL].longURL = req.body.longURL;
+  if (urlDatabase[req.params.shortURL].userId === req.session["userId"]) {
+    urlDatabase[req.params.shortURL].longURL = req.body.longURL;
   }
   res.redirect('/urls');
-})
+});
  
-// LOGIN - Access page (GET)        
+// LOGIN - Access page (GET)
 app.get('/login', (req, res) => {
-  let templateVars = { urls: urlDatabase, user: users[req.session["user_id"]]};
+  let templateVars = { urls: urlDatabase, user: users[req.session["userId"]]};
   res.render("urls_login", templateVars);
-})
+});
 
 // LOGIN - Action (POST)
 app.post("/login", (req, res) => {
-  let email = req.body.email;  
+  let email = req.body.email;
   let password = req.body.password;
-  let userId = getUserByEmail(email, users)
+  let userId = getUserByEmail(email, users);
   if (userId) {
-    if (bcrypt.compareSync(password, users[userId].password)) { 
-      req.session.user_id = userId;                        
+    if (bcrypt.compareSync(password, users[userId].password)) {
+      req.session.userId = userId;
     } else {
-      res.statusCode = 403.         
-      res.send(res.statusCode);  
+      res.statusCode = 403.;
+      res.send(res.statusCode);
     }
-  } else {                          
-    res.statusCode = 403.
+  } else {
+    res.statusCode = 403.;
     res.send(res.statusCode);
   }
-    res.redirect('/urls');
-})
+  res.redirect('/urls');
+});
 
 // LOGOUT
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect('/urls');
-})
+});
 
 // Open REGISTER page (GET)
 app.get("/register", (req, res) => {
-  let templateVars = { user: users[req.session["user_id"]]}
+  let templateVars = { user: users[req.session["userId"]]};
   res.render('urls_user_registration', templateVars);
-})
+});
 
 // REGISTER Action (POST)
 app.post("/register", (req, res) => {
-  let { email, password } = req.body
-  if(email === "" || password === "") {
-    res.statusCode = 400.             
+  let { email, password } = req.body;
+  if (email === "" || password === "") {
+    res.statusCode = 400.;
     res.send(res.statusCode);
-  } else if (getUserByEmail(email, users)) {         
-    res.statusCode = 404.          
-    res.send(res.statusCode);            
-  } else {                               
-    let id = generateRandomString()
+  } else if (getUserByEmail(email, users)) {
+    res.statusCode = 404.;
+    res.send(res.statusCode);
+  } else {
+    let id = generateRandomString();
     const hashedPassword = bcrypt.hashSync(password, 10);
-      users[id] = {
+    users[id] = {
       id: id,
-      email: email,   
+      email: email,
       password: hashedPassword
     };
-    req.session.user_id = users[id].id;
+    req.session.userId = users[id].id;
     res.redirect('/urls');
   }
 });
